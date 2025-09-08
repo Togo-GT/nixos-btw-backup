@@ -1,0 +1,24 @@
+/home/gt/nixos
+├── flake.nix
+├── configuration.nix         # root config (kun imports)
+├── hardware-configuration.nix
+├── modules
+│   ├── system
+│   │   ├── basics.nix        # 💻 System basics
+│   │   ├── desktop.nix       # 🖥 Desktop (X11, Plasma)
+│   │   ├── security.nix      # 🔒 Sikkerhed / SSH / sudo
+│   │   ├── audio-print.nix   # 🔊 Audio & Printing
+│   │   ├── users.nix         # 👤 Brugere
+│   │   ├── cli.nix           # 🐚 Shell & CLI værktøjer
+│   │   ├── network.nix       # 🌐 Netværk & Firewall
+│   │   ├── nix.nix           # 🚀 Nix & flakes
+│   │   └── version.nix       # ⚡ System version
+│   └── home
+│       ├── zsh.nix           # 🐚 Zsh + Oh My Zsh
+│       ├── aliases.nix       # 🔗 Aliases
+│       ├── terminal.nix      # 🖥 Alacritty
+│       ├── editors.nix       # ✍️ Vim, Neovim, VSCode
+│       ├── git.nix           # 🌱 Git config
+│       ├── tmux.nix          # 🔲 Tmux
+│       └── packages.nix      # 📦 CLI apps
+└── home.nix                  # loader alle home-moduler
