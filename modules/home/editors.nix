@@ -1,11 +1,9 @@
 { config, pkgs, ... }:
 
 {
-  # ----------------------------
-  # ✍️ Editors
-  # ----------------------------
   programs.vim.enable = true;
   programs.neovim.enable = true;
+
   home.file.".config/nvim/init.vim".text = ''
     set number
     syntax on

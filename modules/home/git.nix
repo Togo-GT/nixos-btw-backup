@@ -1,10 +1,8 @@
 { config, pkgs, ... }:
 
 {
-  # ----------------------------
-  # 🌱 Git config
-  # ----------------------------
   programs.git.enable = true;
+
   home.file.".gitconfig".text = ''
     [user]
       name = "Togo-GT"

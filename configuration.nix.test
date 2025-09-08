@@ -1,0 +1,186 @@
+{ config, pkgs, ... }:
+
+let
+  mcServicePath = "/home/gt/minecraft";
+  mcBackupPath = "/mnt/backup/minecraft";
+in
+{
+  # ----------------------------
+  # 💻 System Basics
+  # ----------------------------
+  boot.loader.grub.enable = true;              # 🥧 Enable GRUB
+  boot.loader.grub.device = "/dev/sda";        # 💽 GRUB device
+  boot.loader.grub.useOSProber = true;         # 🔍 Detect other OS
+
+  networking.hostName = "nixos-btw";           # 🌟 Hostname
+  networking.networkmanager.enable = true;     # 📶 NetworkManager
+  networking.firewall.enable = true;           # 🔥 Firewall
+
+  time.timeZone = "Europe/Copenhagen";         # ⏰ Timezone
+  time.enableNtp = true;                        # ⏱ Enable automatic time sync
+
+  console.keyMap = "dk";                        # 🇩🇰 Keyboard layout for TTY
+
+  # ----------------------------
+  # 🌍 Locale
+  # ----------------------------
+  i18n.defaultLocale = "en_DK.UTF-8";          # 📝 English system messages with Danish formatting
+  i18n.locales = [ "en_DK.UTF-8" "da_DK.UTF-8" ];
+  i18n.extraLocaleSettings = {
+    LC_ADDRESS = "da_DK.UTF-8";
+    LC_IDENTIFICATION = "da_DK.UTF-8";
+    LC_MEASUREMENT = "da_DK.UTF-8";
+    LC_MONETARY = "da_DK.UTF-8";
+    LC_NAME = "da_DK.UTF-8";
+    LC_NUMERIC = "da_DK.UTF-8";
+    LC_PAPER = "da_DK.UTF-8";
+    LC_TELEPHONE = "da_DK.UTF-8";
+    LC_TIME = "da_DK.UTF-8";
+  };
+
+  # ----------------------------
+  # 👤 User Setup
+  # ----------------------------
+  users.users.gt = {
+    isNormalUser = true;
+    extraGroups = [ "wheel" "networkmanager" "docker" ];
+    password = "CHANGE_ME";                     # 🔑 Set secure password
+    openssh.authorizedKeys.keys = [ "ssh-rsa AAAA..." ]; # 🔑 Add your SSH key
+  };
+
+  # ----------------------------
+  # 🛠 Packages & Updates
+  # ----------------------------
+  nixpkgs.config.allowUnfree = true;
+  system.autoUpgrade.enable = true;
+  system.autoUpgrade.allowReboot = false;
+
+  environment.systemPackages = with pkgs; [
+    git vim htop neofetch wget curl docker docker-compose
+    steam lutris vlc firefox python310 nodejs go jq rsync
+    mc screen tmux unzip zip
+  ];
+
+  # ----------------------------
+  # 🖥 Desktop Environment
+  # ----------------------------
+  services.xserver.enable = true;
+  services.xserver.displayManager.sddm.enable = true;
+  services.xserver.desktopManager.plasma5.enable = true;
+
+  # ----------------------------
+  # 🔧 Shell & Aliases
+  # ----------------------------
+  programs.zsh.enable = true;
+  programs.zsh.ohMyZsh.enable = true;
+
+  programs.zsh.initExtra = ''
+    alias ll='ls -alhF'
+    alias la='ls -A'
+    alias l='ls -CF'
+    alias gs='git status'
+    alias gd='git diff'
+    alias gp='git push'
+    alias gl='git pull'
+    alias ga='git add'
+    alias gc='git commit'
+    alias update='sudo nixos-rebuild switch --upgrade'
+
+    # Docker shortcuts
+    alias dps='docker ps'
+    alias dpa='docker ps -a'
+    alias di='docker images'
+    alias drm='docker rm'
+    alias drmi='docker rmi'
+
+    # Fancy Git prompt
+    autoload -Uz vcs_info
+    precmd() { vcs_info }
+    zstyle ':vcs_info:git:*' formats '(%b)'
+
+    export EDITOR=vim
+  '';
+
+  # ----------------------------
+  # 💾 Daily User Backup
+  # ----------------------------
+  systemd.services.home-backup = {
+    description = "Backup /home/gt daily";
+    after = [ "network.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.rsync}/bin/rsync -a --delete /home/gt/ /mnt/backup/gt/";
+    };
+    timerConfig = {
+      OnCalendar = "*-*-* 03:00:00";
+      Persistent = true;
+    };
+    wantedBy = [ "timers.target" ];
+  };
+
+  # ----------------------------
+  # 🟢 Minecraft Server
+  # ----------------------------
+  systemd.services.minecraft = {
+    description = "Minecraft Server";
+    after = [ "network.target" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      User = "gt";
+      WorkingDirectory = mcServicePath;
+      ExecStart = "${pkgs.jre}/bin/java -Xmx$(awk '/MemTotal/ {printf \"%dM\", $2/1024/2}') -Xms512M -jar server.jar nogui";
+      Restart = "on-failure";
+      RestartSec = 10;
+    };
+  };
+
+  # ----------------------------
+  # 💾 Minecraft World Backup
+  # ----------------------------
+  systemd.services.minecraft-backup = {
+    description = "Backup Minecraft World";
+    after = [ "network.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.rsync}/bin/rsync -a --delete ${mcServicePath}/world/ ${mcBackupPath}/world/";
+    };
+    timerConfig = {
+      OnCalendar = "*-*-* 04:00:00";  # 🌙 Daily at 4 AM
+      Persistent = true;
+    };
+    wantedBy = [ "timers.target" ];
+  };
+
+  # ----------------------------
+  # 🖱 Helper Menu
+  # ----------------------------
+  environment.etc."bin/gt-menu.sh".text = ''
+    #!/usr/bin/env bash
+    echo "==============================="
+    echo "      GT All-in-One Menu"
+    echo "==============================="
+    echo "1) Start Minecraft Server"
+    echo "2) Stop Minecraft Server"
+    echo "3) View Minecraft Logs"
+    echo "4) Backup Minecraft World Now"
+    echo "5) Update System"
+    echo "6) Docker PS"
+    echo "7) Launch Steam"
+    echo "8) Launch Lutris"
+    echo "9) Exit"
+    read -p "Choose an option: " opt
+    case $opt in
+      1) sudo systemctl start minecraft ;;
+      2) sudo systemctl stop minecraft ;;
+      3) tail -f ~/minecraft/logs/latest.log ;;
+      4) sudo systemctl start minecraft-backup ;;
+      5) update ;;
+      6) dps ;;
+      7) steam ;;
+      8) lutris ;;
+      9) exit ;;
+      *) echo "Invalid option" ;;
+    esac
+  '';
+  environment.etc."bin/gt-menu.sh".mode = "0755";
+}

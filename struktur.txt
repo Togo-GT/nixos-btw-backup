@@ -15,7 +15,7 @@
 │   │   └── version.nix       # ⚡ System version
 │   └── home
 │       ├── zsh.nix           # 🐚 Zsh + Oh My Zsh
-│       ├── aliases.nix       # 🔗 Aliases
+│       ├── aliases.nix       # 🔗 Aliases med emojis
 │       ├── terminal.nix      # 🖥 Alacritty
 │       ├── editors.nix       # ✍️ Vim, Neovim, VSCode
 │       ├── git.nix           # 🌱 Git config
