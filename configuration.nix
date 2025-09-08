@@ -2,7 +2,7 @@
 
 {
   imports = [
-    ./hardware-configuration.nix   # 🖥 Hardware scan
+    ./hardware-configuration.nix    # 🖥️ Hardware opsætning
     ./modules/system/basics.nix
     ./modules/system/desktop.nix
     ./modules/system/security.nix
