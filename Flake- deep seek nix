@@ -2,44 +2,32 @@
   description = "NixOS config for nixos-btw with Home Manager ✨";
 
   inputs = {
-    # 📦 NixOS official channels
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-
-    # 🏠 Home Manager integration
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    # Add these suggested inputs for better stability
-    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-23.11"; # Stable branch
+    nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-23.11"; # Bruges kun eksplicit
   };
 
   outputs = { self, nixpkgs, home-manager, ... } @ inputs:
     let
-      system = "x86_64-linux"; # 🖥 Your machine architecture
+      system = "x86_64-linux";
     in {
-      nixosConfigurations = {
-        nixos-btw = nixpkgs.lib.nixosSystem {
-          inherit system;
-          # Pass all inputs to configuration modules
-          specialArgs = { inherit inputs; }; 
-
-          modules = [
-            ./configuration.nix     # 💻 System configuration
-            home-manager.nixosModules.home-manager
-
-            {
-              # 🏠 Home Manager settings
-              home-manager.useUserPackages = true;
-              home-manager.useGlobalPkgs = true;
-              home-manager.users.gt = import ./home.nix;
-              
-              # Optional: Extra home-manager config
-              home-manager.extraSpecialArgs = { inherit inputs; };
-            }
-          ];
-        };
+      nixosConfigurations.nixos-btw = nixpkgs.lib.nixosSystem {
+        inherit system;
+        specialArgs = { inherit inputs; }; 
+        modules = [
+          ./configuration.nix
+          home-manager.nixosModules.home-manager
+          {
+            home-manager = {
+              useUserPackages = true;
+              users.gt = import ./home.nix;
+              extraSpecialArgs = { inherit inputs; }; # Send inputs til home.nix
+            };
+          }
+        ];
       };
     };
 }
